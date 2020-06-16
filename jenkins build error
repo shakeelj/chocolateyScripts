@@ -1,0 +1,16 @@
+[${Workspace_Home}] $ powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File C:\Windows\TEMP\jenkins172.ps1
+Running commands on neptuneatmsapp
+Tomcat Stop Command:  $tomcatProc = Get-Process tomcat9 -ErrorAction SilentlyContinue; if (!$tomcatProc.HasExited) { write-host "tomcat is running - stopping process"; $tomcatProc | Stop-Process -Force }
+Install Command:  choco upgrade chart-atms -y --params '/ENV:neptune /CFG:app /STARTSERVICES' --version '22.0.0' --force --source http://chartcmci01/chocolatey/
+tomcat is running - stopping process
+
+'java' is not recognized as an internal or external command,
+At C:\Windows\TEMP\jenkin.ps1:42 char:13
++ $result = $(Invoke-command -computer $APPSERVER -Credential $cred -Sc ...
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ('java' is not r...ternal command, 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+    + PSComputerName        : neptuneatmsapp
+ 
+Build step 'PowerShell' marked build as failure
