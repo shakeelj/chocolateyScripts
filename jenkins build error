@@ -1,16 +1,43 @@
-[${Workspace_Home}] $ powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File C:\Windows\TEMP\jenkins172.ps1
-Running commands on neptuneatmsapp
-Tomcat Stop Command:  $tomcatProc = Get-Process tomcat9 -ErrorAction SilentlyContinue; if (!$tomcatProc.HasExited) { write-host "tomcat is running - stopping process"; $tomcatProc | Stop-Process -Force }
-Install Command:  choco upgrade chart-atms -y --params '/ENV:neptune /CFG:app /STARTSERVICES' --version '22.0.0' --force --source http://chartcmci01/chocolatey/
-tomcat is running - stopping process
+# Ensure the build fails if there is a problem.
+# The build will fail if there are any errors on the remote machine too
+$ErrorActionPreference = 'Stop'
 
-'java' is not recognized as an internal or external command,
-At C:\Windows\TEMP\jenkin.ps1:42 char:13
-+ $result = $(Invoke-command -computer $APPSERVER -Credential $cred -Sc ...
-+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ('java' is not r...ternal command, 
-   :String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
-    + PSComputerName        : neptuneatmsapp
- 
-Build step 'PowerShell' marked build as failure
+# Create a PSCredential Object using the "User" and "Password" parameters that you passed to the job
+$SecurePassword = $env:PASSWORD | ConvertTo-SecureString -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential -ArgumentList $env:USERNAME, $SecurePassword
+
+# get the environment name
+$APP_NAME = $env:CHART_APP.Split('-') | Select-Object -Last 1
+
+# set package parameters
+#$ENV_NAME = $env:SERVERNAME -split $APP_NAME | Select-Object -First 1
+$ENV_NAME = $env:SERVERNAME
+
+# get the install version of the app
+#$SVN_URL = $env:SOURCE_URL
+#$PRODUCT_VERSION = $SVN_URL.Split('/') | Select-Object -Last 1
+#$PRODUCT_VERSION = $PRODUCT_VERSION.Trim("R"," ")
+$PRODUCT_VERSION = $env:BRANCH_NUMBER.Trim("R"," ")
+$PRODUCT_VERSION = "`'$PRODUCT_VERSION`'"
+
+# define app1 and exp1 server names and parameters
+$APPSERVER = $ENV_NAME + "atmsapp"
+$APPPARAMS = "`'/ENV:$ENV_NAME /CFG:app /STARTSERVICES`'"
+
+# Invoke a command on the remote machine.
+$stopTomcat = "`$tomcatProc = Get-Process tomcat9 -ErrorAction SilentlyContinue; if (!`$tomcatProc.HasExited) { write-host `"tomcat is running - stopping process`"; `$tomcatProc | Stop-Process -Force }"
+$appInstCmd = "choco upgrade $env:CHART_APP -y --params $APPPARAMS --version $PRODUCT_VERSION --force --source http://chartcmci01/chocolatey/"
+
+# run install on app1 server
+write-host "Running commands on $APPSERVER"
+write-host "Tomcat Stop Command:  $stopTomcat"
+write-host "Install Command:  $appInstCmd"
+
+$tomcatScript = [scriptblock]::Create($stopTomcat)
+$result = $(Invoke-command -computer $APPSERVER -Credential $cred -ScriptBlock $tomcatScript)
+write-host $result
+
+$instScript = [scriptblock]::Create($appInstCmd)
+$result = $(Invoke-command -computer $APPSERVER -Credential $cred -ScriptBlock $instScript)
+write-host $result
+
