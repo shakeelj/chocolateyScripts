@@ -41,3 +41,17 @@ $instScript = [scriptblock]::Create($appInstCmd)
 $result = $(Invoke-command -computer $APPSERVER -Credential $cred -ScriptBlock $instScript)
 write-host $result
 
+
+###########################
+
+{
+$psSession = New-PSSession -ComputerName $APPSERVER -Credential $cred  -Name "Test"
+$result = $(Invoke-command -ScriptBlock $instScript -SessionName "Test")
+Disconnect-PSSession -Session $psSession
+
+}
+catch
+{
+    Disconnect-PSSession -Session $psSession
+    throw $Error
+}
