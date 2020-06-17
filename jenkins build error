@@ -55,3 +55,22 @@ catch
     Disconnect-PSSession -Session $psSession
     throw $Error
 }
+
+
+
+###################################
+
+{
+# add line 42 here 
+}
+catch
+{
+ if ("java" -eq $error[0].Exception.CommandName)
+ {
+    Write-Host "Known jenkins issue. Absorbing error as build runs fine."
+ }
+ else
+ {
+    throw $error[0]
+ }
+}
